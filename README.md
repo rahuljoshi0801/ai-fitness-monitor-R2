@@ -27,7 +27,7 @@ Daily fitness report at the end of the day
 ## working
 1. The user enter the photo of the food they consumed
 2. The user confirms the indian food items present in the meal 
-3. The user provides the workout details and step count
+3. The user provides the workout details and step count also the height and weight
 4. The system calculate an estimate daily calorie requirement
 5. The calorie bured thought workout and steps are calculated
 6. Bases on the result, the system suggests:
