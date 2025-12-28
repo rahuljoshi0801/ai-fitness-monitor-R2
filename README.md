@@ -48,10 +48,10 @@ Backend: Python(Flash)
 3. Increase the food recognition and calorie estimation accuracy
 
 ## Team members 
-Rahul Joshi
-Bhumi
-Shivani Negi
-Piyush Palariya
+-Rahul Joshi
+-Bhumi
+-Shivani Negi
+-Piyush Palariya
 
 Note: 
 The project is developed for Round 1 prototype . 
