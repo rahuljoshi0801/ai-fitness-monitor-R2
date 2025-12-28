@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,17 +7,24 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   </head>
   <body>
-    <div class="app">
+    <div class ="app">
       <header>
-        <h1>Anavrin</h1>
+        <p class=" app-pill">Daily check-in  </p>
+        <h1>Hi Welcome to Anavrin </h1>
+        <p class=" app-subtitle">
+          Send us the pictues of your plate and your workout details .
+        </p>
       </header>
 
       <main>
         <form id="fitness-form">
           <section>
-            <h2>1. Meal Snapshot</h2>
+            <h2>Meal snapshot here </h2>
+            <p class="section-hint">
+              A quick photo is enough 
+            </p>
             <label class="file-upload">
-              <span>Upload photo</span>
+              <span>Upload here</span>
               <input id="meal-photo" type="file" accept="image/*" />
             </label>
             <small id="prediction-status"></small>
@@ -28,7 +35,10 @@
           </section>
 
           <section>
-            <h2>2. Confirm Indian food items</h2>
+            <h2>2. Confirm what you ate</h2>
+            <p class="section-hint">
+              Confirm the food items
+            </p>
             <div class="food-grid">
               {% for item, calories in food_options.items() %}
               <label>
@@ -45,6 +55,9 @@
 
           <section>
             <h2>3. Body stats</h2>
+            <p class="section-hint">
+              For BMI insights
+            </p>
             <div class="metrics-grid">
               <label>
                 Height (cm)
@@ -74,7 +87,10 @@
           </section>
 
           <section>
-            <h2>4. Workout details</h2>
+            <h2>4. Movement vibes</h2>
+            <p class="section-hint">
+              Tell us how intense things felt. Notes are optional voice-notes in text.
+            </p>
             <label>
               Intensity
               <select name="workoutIntensity">
@@ -92,6 +108,9 @@
 
           <section>
             <h2>5. Steps</h2>
+            <p class="section-hint">
+              Enter your step count here  
+            </p>
             <label>
               Daily step count
               <input type="number" name="steps" min="0" value="4000" />
@@ -102,7 +121,10 @@
         </form>
 
         <section id="result" class="hidden">
-          <h2>Daily Fitness Summary</h2>
+          <h2>Daily reflection</h2>
+          <p class="section-hint">
+            Here’s what today looks like. Small steps count, so celebrate them.
+          </p>
           <div class="summary-grid">
             <article>
               <h3>Calorie Intake</h3>
@@ -126,6 +148,7 @@
               <small id="bmi-category">-</small>
             </article>
           </div>
+          <p id="summary-note" class="summary-note hidden"></p>
         </section>
       </main>
     </div>
@@ -138,6 +161,7 @@
       const predictionStatus = document.getElementById("prediction-status");
       const predictionPanel = document.getElementById("prediction-panel");
       const predictionList = document.getElementById("prediction-list");
+      const summaryNote = document.getElementById("summary-note");
 
       async function requestPredictions(file) {
         const body = new FormData();
@@ -257,6 +281,19 @@
             bmiValueEl.textContent = "—";
             bmiCategoryEl.textContent = "Not enough data";
           }
+
+          const goalMessages = {
+            Bulk:
+              "Your body could use a gentle surplus today. Add a hearty snack or extra portion you truly enjoy.",
+            Cut:
+              "You’re in a light deficit. Keep meals colourful and hydrate—small mindful choices will keep you on track.",
+            Maintain:
+              "You’re right on target. Keep listening to your energy levels and rest when needed.",
+          };
+          summaryNote.textContent =
+            goalMessages[data.recommendedGoal] ||
+            "Keep tuning in to your body—consistency beats perfection.";
+          summaryNote.classList.remove("hidden");
 
           resultSection.classList.remove("hidden");
         } catch (error) {
