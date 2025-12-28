@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Anavrin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <h1>Anavrin</h1>
+      </header>
+
+      <main>
+        <form id="fitness-form">
+          <section>
+            <h2>1. Meal Snapshot</h2>
+            <label class="file-upload">
+              <span>Upload photo</span>
+              <input id="meal-photo" type="file" accept="image/*" />
+            </label>
+            <small id="prediction-status"></small>
+            <div id="prediction-panel" class="hidden">
+              <h3>Top predictions</h3>
+              <ul id="prediction-list"></ul>
+            </div>
+          </section>
+
+          <section>
+            <h2>2. Confirm Indian food items</h2>
+            <div class="food-grid">
+              {% for item, calories in food_options.items() %}
+              <label>
+                <input type="checkbox" name="foods" value="{{ item }}" />
+                <span>{{ item|title }}</span>
+              </label>
+              {% endfor %}
+              <label>
+                <input type="checkbox" name="foods" value="biryani" />
+                <span>Biryani</span>
+              </label>
+            </div>
+          </section>
+
+          <section>
+            <h2>3. Body stats</h2>
+            <div class="metrics-grid">
+              <label>
+                Height (cm)
+                <input
+                  type="number"
+                  name="heightCm"
+                  min="80"
+                  max="250"
+                  step="0.1"
+                  placeholder="e.g., 168"
+                  required
+                />
+              </label>
+              <label>
+                Weight (kg)
+                <input
+                  type="number"
+                  name="weightKg"
+                  min="25"
+                  max="250"
+                  step="0.1"
+                  placeholder="e.g., 65"
+                  required
+                />
+              </label>
+            </div>
+          </section>
+
+          <section>
+            <h2>4. Workout details</h2>
+            <label>
+              Intensity
+              <select name="workoutIntensity">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+            <textarea
+              name="workoutNotes"
+              rows="3"
+              placeholder="Optional: note reps/sets or the type of workout for your own tracking."
+            ></textarea>
+          </section>
+
+          <section>
+            <h2>5. Steps</h2>
+            <label>
+              Daily step count
+              <input type="number" name="steps" min="0" value="4000" />
+            </label>
+          </section>
+
+          <button type="submit">Generate Summary</button>
+        </form>
+
+        <section id="result" class="hidden">
+          <h2>Daily Fitness Summary</h2>
+          <div class="summary-grid">
+            <article>
+              <h3>Calorie Intake</h3>
+              <p id="calorie-intake">-</p>
+            </article>
+            <article>
+              <h3>Calories Burned</h3>
+              <p id="calories-burned">-</p>
+            </article>
+            <article>
+              <h3>Maintenance Target</h3>
+              <p id="maintenance-calories">-</p>
+            </article>
+            <article>
+              <h3>Recommended Goal</h3>
+              <p id="recommended-goal">-</p>
+            </article>
+            <article>
+              <h3>BMI</h3>
+              <p id="bmi-value">-</p>
+              <small id="bmi-category">-</small>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const foodCheckboxes = Array.from(
+        document.querySelectorAll('input[name="foods"]')
+      );
+      const photoInput = document.getElementById("meal-photo");
+      const predictionStatus = document.getElementById("prediction-status");
+      const predictionPanel = document.getElementById("prediction-panel");
+      const predictionList = document.getElementById("prediction-list");
+
+      async function requestPredictions(file) {
+        const body = new FormData();
+        body.append("image", file);
+        const response = await fetch("/predict-food", {
+          method: "POST",
+          body,
+        });
+        if (!response.ok) {
+          const payload = await response.json();
+          throw new Error(payload.error || "Prediction failed");
+        }
+        return response.json();
+      }
+
+      function setPredictedFoods(predictions) {
+        // Clear previously checked boxes.
+        foodCheckboxes.forEach((checkbox) => {
+          checkbox.checked = false;
+        });
+
+        predictions.forEach((prediction) => {
+          const match = foodCheckboxes.find(
+            (checkbox) => checkbox.value === prediction.label
+          );
+          if (match) {
+            match.checked = true;
+          }
+        });
+      }
+
+      function renderPredictions(predictions) {
+        predictionList.innerHTML = "";
+        predictions.forEach(({ label, probability }) => {
+          const li = document.createElement("li");
+          li.textContent = `${label} — ${(probability * 100).toFixed(1)}%`;
+          predictionList.appendChild(li);
+        });
+      }
+
+      photoInput.addEventListener("change", async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) {
+          predictionStatus.textContent = "";
+          predictionPanel.classList.add("hidden");
+          return;
+        }
+
+        predictionStatus.textContent = "Running the food classifier…";
+        predictionPanel.classList.add("hidden");
+
+        try {
+          const { predictions } = await requestPredictions(file);
+          setPredictedFoods(predictions);
+          renderPredictions(predictions);
+          predictionStatus.textContent =
+            "Suggestions applied. Review or edit the selections below.";
+          predictionPanel.classList.remove("hidden");
+        } catch (error) {
+          console.error(error);
+          predictionStatus.textContent =
+            error.message || "Prediction failed. Please try another photo.";
+        }
+      });
+
+      const form = document.getElementById("fitness-form");
+      const resultSection = document.getElementById("result");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        if (!photoInput.files || photoInput.files.length === 0) {
+          alert("Please upload your meal photo before generating the summary.");
+          photoInput.focus();
+          return;
+        }
+
+        const formData = new FormData(form);
+        const selectedFoods = formData.getAll("foods");
+        const workoutIntensity = formData.get("workoutIntensity") || "low";
+        const steps = Number(formData.get("steps") || 0);
+        const heightCm = Number(formData.get("heightCm") || 0);
+        const weightKg = Number(formData.get("weightKg") || 0);
+
+        try {
+          const response = await fetch("/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              foods: selectedFoods,
+              workoutIntensity,
+              steps,
+              heightCm,
+              weightKg,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Server error");
+          }
+
+          const data = await response.json();
+          document.getElementById("calorie-intake").textContent =
+            data.calorieIntake + " kcal";
+          document.getElementById("calories-burned").textContent =
+            data.caloriesBurned + " kcal";
+          document.getElementById("maintenance-calories").textContent =
+            data.maintenanceCalories + " kcal";
+          document.getElementById("recommended-goal").textContent =
+            data.recommendedGoal;
+          const bmiValueEl = document.getElementById("bmi-value");
+          const bmiCategoryEl = document.getElementById("bmi-category");
+          if (data.bmi) {
+            bmiValueEl.textContent = data.bmi.toFixed(1);
+            bmiCategoryEl.textContent = data.bmiCategory || "";
+          } else {
+            bmiValueEl.textContent = "—";
+            bmiCategoryEl.textContent = "Not enough data";
+          }
+
+          resultSection.classList.remove("hidden");
+        } catch (error) {
+          alert(
+            "Something went wrong. Please try again or check the backend console."
+          );
+          console.error(error);
+        }
+      });
+    </script>
+  </body>
+</html>
