@@ -14,17 +14,16 @@ Because of this user get inaccurate calorie counts and not so useful advices whi
 ## Our plan
 We are making a AI bases fitness and nutrition assistant specially for indian users.
 Instead of looking at food, workout, or steps separately our system combines them and give a vivid picture of user's daily activity and based on this it estimate maintenance calories and suggest whether the user should bulk, cut or maintain.
-Instead of asking user to manually enter the foof items our system allows the user to manually upload a photo of their meal the information than combined with the workout deatils and step count to estimate maintenance calorie and suggest whether the user should bulk, cut or maintain weight.
-The focus is mainly the indian food habits and make the sysytem affordable, simple and relevent.
+Instead of asking user to manually enter the food items our system allows the user to manually upload a photo of their meal the information than combined with the workout deatils and step count to estimate maintenance calorie and suggest whether the user should bulk, cut or maintain weight.
+The focus is mainly the indian food habits and make the system affordable, simple and relevent.
 
 ## Key features
-Calorie estimate for common Indian foods
-consider workout intensity(reps and sets) along with daily steps
-Estimate maintenance calories
-Simple user interface
-Daily fitness report at the end of the day
+-Calorie estimate for common Indian foods
+-Consider workout intensity along with daily steps
+-Estimate maintenance calories
+-Simple user interface
 
-## working
+## Working
 1. The user enter the photo of the food they consumed
 2. The user confirms the indian food items present in the meal 
 3. The user provides the workout details and step count also the height and weight
@@ -55,7 +54,7 @@ Backend: Python(Flash)
 
 Note: 
 The project is developed for Round 1 prototype . 
-
+Larger files can be found in the gdrive link : https://drive.google.com/drive/folders/1awNis5qDmCYOIn1FVib9OLDbpXd23HzS?usp=sharing
 
 
 
