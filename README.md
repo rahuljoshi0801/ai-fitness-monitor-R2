@@ -4,10 +4,10 @@
 Ai driven fitness and nutrition prototype, focused on indian food.
 
 Most of the existing websites are:
-Subscription Based
-Do not understand indian food properly
-Use external APIs
-Track diet, workout and steps separately
+-Subscription Based
+-Do not understand indian food properly
+-Use external APIs
+-Track diet, workout and steps separately
 
 Because of this user get inaccurate calorie counts and not so useful advices which doesn't lead to expected results
 
@@ -34,6 +34,29 @@ The focus is mainly the indian food habits and make the system affordable, simpl
    Bulking plan
    Cutting plan
 
+## Flowchart
+
+   Start
+     ↓
+   Upload the image of your plate
+     ↓
+   Confirm food items
+     ↓
+   Enter User Details
+     ↓
+   Calorie Intake Calculation
+     ↓
+   Calories Burned Calculation
+     ↓
+   Maintenance Calorie Estimation
+     ↓
+   Fitness Goal Suggestion
+     ↓
+   End
+
+
+## Data Flow Diagram
+![Data Flow Diagram](added/dfd.png)
 
 ## Tech Stack 
 Frontend: HTML, CSS, JavaScript
@@ -45,6 +68,12 @@ Backend: Python(Flash)
 1. Implement a machine learning based food recognition model for Indian food
 2. User History and progess tracking enable user to view past records
 3. Increase the food recognition and calorie estimation accuracy
+4. Add a login page for user accounts
+5.Implement personalised workout goals and plans
+
+
+
+
 
 ## Team members 
 -Rahul Joshi
