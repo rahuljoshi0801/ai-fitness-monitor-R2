@@ -58,11 +58,35 @@ The focus is mainly the indian food habits and make the system affordable, simpl
 ## Data Flow Diagram
 ![Data Flow Diagram](added/dfd.png)
 
+## Steps to run the prototype
+1.Clone the repo
+2.Ceate and activate a virtual environment
+3.install the required packages
+    py -3.11 -m venv .venv
+    .\.venv\Scripts\activate
+4. install tensorflow 
+    pip install --upgrade pip
+   pip install Flask tensorflow==2.17.0 numpy pillow
+5. run the training script 
+    python ml\food_classifier_training.py
+6. run the app
+    python app.py
+
+
 ## Tech Stack 
 Frontend: HTML, CSS, JavaScript
 Logic: Rule Based and Ai assisted calculations 
 Data: Indian food calorie data
 Backend: Python(Flash)
+
+
+## Screenshots
+![Screenshot](added/screenshotScreenshot 2025-12-31 133950.png)
+![Screenshot](added/screenshotScreenshot 2025-12-31 133959.png)
+![Screenshot](added/screenshotScreenshot 2025-12-31 134015.png)
+
+## Screenrecording
+![Screenrecording](added/Anavrin - Brave 2025-12-31 13-37-10.mp4)
 
 ## Future Scope 
 1. Implement a machine learning based food recognition model for Indian food
