@@ -89,7 +89,8 @@ Backend: Python(Flash)
 
 
 ## Screenrecording
-![Screenrecording](added/Anavrin.mp4)
+
+https://drive.google.com/file/d/1avxUC6yXU5PKSeI3clyAO5GC3GFMO9Vl/view?usp=sharing 
 
 ## Future Scope 
 1. Implement a machine learning based food recognition model for Indian food
