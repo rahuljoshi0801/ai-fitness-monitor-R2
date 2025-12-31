@@ -81,15 +81,15 @@ Backend: Python(Flash)
 
 
 ## Screenshots
-![Screenshot](added/screenshotScreenshot 2025-12-31 133950.png)
+![Screenshot](added/S1.png)
 
-![Screenshot](added/screenshotScreenshot 2025-12-31 133959.png)
+![Screenshot](added/S2.png)
 
-![Screenshot](added/screenshotScreenshot 2025-12-31 134015.png)
+![Screenshot](added/S3.png)
 
 
 ## Screenrecording
-![Screenrecording](added/Anavrin - Brave 2025-12-31 13-37-10.mp4)
+![Screenrecording](added/Anavrin.mp4)
 
 ## Future Scope 
 1. Implement a machine learning based food recognition model for Indian food
