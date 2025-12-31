@@ -82,8 +82,11 @@ Backend: Python(Flash)
 
 ## Screenshots
 ![Screenshot](added/screenshotScreenshot 2025-12-31 133950.png)
+
 ![Screenshot](added/screenshotScreenshot 2025-12-31 133959.png)
+
 ![Screenshot](added/screenshotScreenshot 2025-12-31 134015.png)
+
 
 ## Screenrecording
 ![Screenrecording](added/Anavrin - Brave 2025-12-31 13-37-10.mp4)
