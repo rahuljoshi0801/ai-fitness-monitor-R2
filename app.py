@@ -1,12 +1,22 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import tensorflow as tf
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, session
+from werkzeug.security import check_password_hash, generate_password_hash
 
+from storage import (
+    create_user,
+    fetch_recent_check_ins,
+    find_user_by_email,
+    find_user_by_id,
+    init_db,
+    record_check_in,
+)
 from ml.food_classifier_training import (
     CLASS_NAMES_PATH,
     MODEL_OUTPUT_PATH,
@@ -15,6 +25,8 @@ from ml.food_classifier_training import (
 )
 
 app = Flask(__name__)
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
+init_db()
 # paths 
 MODEL_PATH = Path(MODEL_OUTPUT_PATH)
 CLASS_NAMES_FILE = Path(CLASS_NAMES_PATH)
@@ -101,10 +113,96 @@ def ensure_model_loaded() -> None:
         CLASS_NAMES = load_class_names(CLASS_NAMES_FILE)
 
 
+def current_user() -> dict | None:
+    user_id = session.get("user_id")
+    if user_id is None:
+        return None
+    return find_user_by_id(user_id)
+
+
+def login_user(user: dict) -> None:
+    session["user_id"] = user["id"]
+    session["user_name"] = user["name"]
+
+
+def logout_user() -> None:
+    session.clear()
+
+
+def generate_personalized_plan(
+    history_entries: list[dict],
+    latest_summary: dict | None,
+) -> dict:
+    steps_values = [
+        int(entry.get("steps") or 0) for entry in history_entries if entry.get("steps")
+    ]
+    avg_steps = sum(steps_values) / len(steps_values) if steps_values else 5000
+    latest_goal = (latest_summary or {}).get("recommendedGoal", "Maintain")
+    latest_bmi = (latest_summary or {}).get("bmi")
+    intensity_counts: dict[str, int] = {"low": 0, "medium": 0, "high": 0}
+    for entry in history_entries:
+        intensity = (entry.get("workoutIntensity") or "low").lower()
+        if intensity in intensity_counts:
+            intensity_counts[intensity] += 1
+
+    dominant_intensity = max(intensity_counts, key=intensity_counts.get)
+    steps_target = int(round(max(avg_steps + 1500, 6000), -2))
+
+    focus_map = {
+        "Bulk": "Lean muscle gain",
+        "Cut": "Gentle fat loss",
+        "Maintain": "Balanced maintenance",
+    }
+    focus = focus_map.get(latest_goal, "Balanced maintenance")
+
+    if latest_bmi:
+        if latest_bmi < 18.5:
+            nutrition_tip = "Add calorie-dense snacks (peanuts, paneer, dals) to support healthy weight gain."
+        elif latest_bmi < 25:
+            nutrition_tip = "Stick with colourful plates and steady protein to maintain your groove."
+        else:
+            nutrition_tip = "Prioritise fibre-rich sabzis and lean proteins to keep you full while trimming."
+    else:
+        nutrition_tip = "Balance each plate with carbs, protein, and veg for steady energy."
+
+    workout_tip = {
+        "low": "Sprinkle shorter walks or light yoga through the day to build momentum.",
+        "medium": "Great consistency—add one focused strength session to level up.",
+        "high": "You’re crushing intensity. Mix in recovery mobility so your body stays fresh.",
+    }.get(dominant_intensity, "Keep listening to your body and mix cardio with strength.")
+
+    note = (
+        f"Based on {len(history_entries)} recent check-ins."
+        if history_entries
+        else "Plan tailored from today’s inputs."
+    )
+
+    return {
+        "focus": focus,
+        "stepsTarget": steps_target,
+        "workoutTip": workout_tip,
+        "nutritionTip": nutrition_tip,
+        "note": note,
+    }
+
+
 @app.route("/")
 def index():
     """Serve the prototype UI"""
-    return render_template("index.html", food_options=FOOD_CALORIES)
+    user = current_user()
+    history = []
+    plan_preview = None
+    if user:
+        history = fetch_recent_check_ins(user["id"])
+        latest_summary = history[0].get("summary") if history else None
+        plan_preview = generate_personalized_plan(history, latest_summary)
+    return render_template(
+        "index.html",
+        food_options=FOOD_CALORIES,
+        user=user,
+        history=history,
+        plan=plan_preview,
+    )
 
 #summary 
 @app.post("/analyze")
@@ -123,16 +221,27 @@ def analyze():
     goal = recommend_goal(net_intake, maintenance_calories)
     bmi_value, bmi_category = calculate_bmi(height_cm, weight_kg)
 
-    return jsonify(
-        {
-            "calorieIntake": calorie_intake,
-            "caloriesBurned": calories_burned,
-            "maintenanceCalories": maintenance_calories,
-            "recommendedGoal": goal,
-            "bmi": bmi_value,
-            "bmiCategory": bmi_category,
-        }
-    )
+    response = {
+        "calorieIntake": calorie_intake,
+        "caloriesBurned": calories_burned,
+        "maintenanceCalories": maintenance_calories,
+        "recommendedGoal": goal,
+        "bmi": bmi_value,
+        "bmiCategory": bmi_category,
+    }
+
+    user = current_user()
+    history_entries: list[dict] = []
+    if user:
+        record_check_in(user["id"], {**data, **response})
+        history_entries = fetch_recent_check_ins(user["id"], limit=7)
+
+    plan = generate_personalized_plan(history_entries, {**data, **response})
+    response["personalPlan"] = plan
+    if history_entries:
+        response["history"] = history_entries
+
+    return jsonify(response)
 
 
 @app.post("/predict-food")
@@ -156,22 +265,61 @@ def predict_food():
         predictions = predict_top_k(
             MODEL_PATH,
             temp_path,
-            CLASS_NAMES,
-            k=3,
-            model=FOOD_MODEL,
-        )
-    except Exception as exc:  # noqa: BLE001
-        return jsonify({"error": f"Prediction failed: {exc}"}), 500
     finally:
         temp_path.unlink(missing_ok=True)
 
     return jsonify(
-        {
-            "predictions": [
-                {"label": label, "probability": prob} for label, prob in predictions
-            ]
-        }
+        {"predictions": [{"label": label, "probability": score} for label, score in predictions]}
     )
+
+
+@app.post("/register")
+def register():
+    data = request.get_json(force=True)
+    name = data.get("name", "").strip()
+    email = data.get("email", "").lower().strip()
+    password = data.get("password", "")
+
+    if not name or not email or not password:
+        return jsonify({"error": "Name, email, and password are required."}), 400
+
+    existing = find_user_by_email(email)
+    if existing:
+        return jsonify({"error": "Email already registered."}), 400
+
+    password_hash = generate_password_hash(password)
+    user = create_user(name, email, password_hash)
+    login_user(user)
+    return jsonify({"user": {"id": user["id"], "name": user["name"], "email": user["email"]}})
+
+
+@app.post("/login")
+def login():
+    data = request.get_json(force=True)
+    email = data.get("email", "").lower().strip()
+    password = data.get("password", "")
+
+    user = find_user_by_email(email)
+    if not user or not check_password_hash(user["password_hash"], password):  # type: ignore[index]
+        return jsonify({"error": "Invalid credentials."}), 400
+
+    login_user(user)
+    return jsonify({"user": {"id": user["id"], "name": user["name"], "email": user["email"]}})
+
+
+@app.post("/logout")
+def logout():
+    logout_user()
+    return jsonify({"ok": True})
+
+
+@app.get("/history")
+def history():
+    user = current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    records = fetch_recent_check_ins(user["id"], limit=14)
+    return jsonify({"history": records})
 
 
 if __name__ == "__main__":
