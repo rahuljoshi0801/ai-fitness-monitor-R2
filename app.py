@@ -265,6 +265,8 @@ def predict_food():
         predictions = predict_top_k(
             MODEL_PATH,
             temp_path,
+            CLASS_NAMES,
+        )
     finally:
         temp_path.unlink(missing_ok=True)
 
