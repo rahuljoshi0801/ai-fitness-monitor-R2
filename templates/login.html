@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in • Anavrin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body class="login-body">
+    <div class="login-card">
+      <header>
+        <p class="app-pill">Welcome back</p>
+        <h1>Sign in to track your day</h1>
+        <p class="app-subtitle">
+          Already know what’s on your plate? Sign in to jump straight into the daily
+          reflection.
+        </p>
+      </header>
+
+      <form id="login-page-form" class="stacked-form">
+        <input type="email" name="email" placeholder="Email" required />
+        <input type="password" name="password" placeholder="Password" required />
+        <button type="submit">Continue</button>
+      </form>
+
+      <p class="auth-note">
+        New here? <a href="/">Create an account</a> to start your daily check-ins.
+      </p>
+    </div>
+
+    <script>
+      async function postJSON(url, payload) {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.error || "Something went wrong");
+        }
+        return response.json();
+      }
+
+      const loginForm = document.getElementById("login-page-form");
+      loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const formData = new FormData(loginForm);
+        try {
+          await postJSON("/login", {
+            email: formData.get("email"),
+            password: formData.get("password"),
+          });
+          window.location.href = "/";
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+    </script>
+  </body>
+</html>
