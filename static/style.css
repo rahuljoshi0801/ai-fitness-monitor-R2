@@ -1,3 +1,78 @@
+h1 {
+@@
+}
+
+.auth-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ghost-btn {
+  background: transparent;
+  border: 1px solid rgba(15, 23, 42, 0.15);
+  color: #132f40;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.ghost-btn:hover {
+  background: rgba(19, 47, 64, 0.08);
+}
+
+.auth-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 20px;
+  padding: 1.5rem;
+  border: 1px solid var(--soft-border);
+  box-shadow: 0 20px 40px rgba(19, 47, 64, 0.08);
+  margin-bottom: 2rem;
+}
+
+.stacked-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-note {
+  grid-column: 1 / -1;
+  color: #4a5564;
+  font-size: 0.95rem;
+}
+
+.history-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.history-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--soft-border);
+  background: #fdfcfe;
+}
+
+.history-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  color: #546070;
+  font-size: 0.9rem;
+}
 :root {
   color: #e3e8ef;
   background: #07090f;

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-import sys
 from pathlib import Path
 from typing import Any
 import csv
@@ -13,19 +11,8 @@ sys.path.append(str(Path(__file__).resolve().parent))
 from tempfile import NamedTemporaryFile
 
 import tensorflow as tf
-from flask import (
-    Flask,
-    Response,
-    jsonify,
-    redirect,
-    render_template,
-    request,
-    session,
-    url_for,
-)
-from werkzeug.security import check_password_hash, generate_password_hash
+from flask import Flask, jsonify, render_template, request
 
-from calculators import get_calculator_configs, run_calculator
 from ml.food_classifier_training import (
     CLASS_NAMES_PATH,
     MODEL_OUTPUT_PATH,
@@ -44,9 +31,7 @@ from storage import (
 )
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
-init_db()
-# paths
+# paths 
 MODEL_PATH = Path(MODEL_OUTPUT_PATH)
 CLASS_NAMES_FILE = Path(CLASS_NAMES_PATH)
 FOOD_MODEL: tf.keras.Model | None = None
@@ -399,155 +384,10 @@ def ensure_model_loaded() -> None:
         CLASS_NAMES = load_class_names(CLASS_NAMES_FILE)
 
 
-def current_user() -> dict | None:
-    user_id = session.get("user_id")
-    if user_id is None:
-        return None
-    return find_user_by_id(user_id)
-
-
-def login_user(user: dict) -> None:
-    session["user_id"] = user["id"]
-    session["user_name"] = user["name"]
-
-
-def logout_user() -> None:
-    session.clear()
-
-
-def enrich_history_entry(entry: dict) -> dict:
-    summary_data = entry.get("summary") or {}
-    raw_entries = (
-        entry.get("exerciseEntries")
-        or summary_data.get("exerciseEntries")
-        or entry.get("exerciseDetails")
-    )
-
-    exercise_entries = None
-    exercise_details = entry.get("exerciseDetails") or summary_data.get("exerciseDetails")
-
-    if raw_entries:
-        exercise_entries = normalize_exercise_entries(raw_entries)
-        exercise_details, _, primary = summarize_exercises(exercise_entries)
-        entry["exerciseEntries"] = exercise_entries
-        entry["exerciseDetails"] = exercise_details
-        entry["exerciseDisplay"] = " + ".join(detail["label"] for detail in exercise_details)
-        entry["exerciseId"] = primary["id"]
-        entry["exerciseIntensity"] = primary["intensity"]
-        entry["exerciseLabel"] = entry["exerciseDisplay"] or primary["label"]
-        return entry
-
-    exercise_id = entry.get("exerciseId") or entry.get("workoutIntensity") or DEFAULT_EXERCISE_ID
-    exercise_meta = get_exercise(exercise_id)
-    entry["exerciseId"] = exercise_id
-    entry["exerciseLabel"] = exercise_meta["label"]
-    entry["exerciseIntensity"] = exercise_meta["intensity"]
-    entry["exerciseDisplay"] = exercise_meta["label"]
-    return entry
-
-
-def enrich_history_entries(entries: list[dict]) -> list[dict]:
-    return [enrich_history_entry(entry) for entry in entries]
-
-
 @app.route("/")
 def index():
-    """Serve the main dashboard, requiring authentication."""
-    user = current_user()
-    if not user:
-        return redirect(url_for("login_page"))
-
-    history_entries = enrich_history_entries(
-        fetch_recent_check_ins(user["id"], limit=7)
-    )
-    calculator_configs = get_calculator_configs()
-    return render_template(
-        "index.html",
-        food_options=FOOD_CALORIES,
-        user=user,
-        history=history_entries,
-        calculators=calculator_configs,
-        exercise_options=EXERCISE_LIBRARY,
-        portion_config=PORTION_CONFIG,
-    )
-
-
-@app.route("/login")
-def login_page():
-    """Serve standalone login screen."""
-    if current_user():
-        return redirect(url_for("index"))
-    return render_template("login.html")
-
-
-@app.route("/register")
-def register_page():
-    if current_user():
-        return redirect(url_for("index"))
-    return render_template("register.html")
-
-
-@app.post("/login")
-def login_action():
-    """Authenticate a user and start a session."""
-    data = request.get_json(force=True)
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
-
-    user = find_user_by_email(email, include_sensitive=True)
-    if not user or not check_password_hash(user["password_hash"], password):
-        return jsonify({"error": "Invalid email or password."}), 400
-
-    clean_user = {k: v for k, v in user.items() if k != "password_hash"}
-    login_user(clean_user)
-    return jsonify({"ok": True, "user": clean_user})
-
-
-@app.post("/logout")
-def logout_action():
-    logout_user()
-    return jsonify({"ok": True})
-
-
-@app.post("/register")
-def register_action():
-    data = request.get_json(force=True)
-    name = (data.get("name") or "").strip()
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
-
-    if len(name) < 2:
-        return jsonify({"error": "Please provide your full name."}), 400
-    if "@" not in email:
-        return jsonify({"error": "Please enter a valid email."}), 400
-    if len(password) < 6:
-        return jsonify({"error": "Password must be at least 6 characters."}), 400
-
-    if find_user_by_email(email):
-        return jsonify({"error": "An account with this email already exists."}), 400
-
-    password_hash = generate_password_hash(password)
-    user = create_user(name, email, password_hash)
-    login_user(user)
-    return jsonify({"ok": True, "user": user})
-
-
-@app.get("/calculators")
-def list_calculators():
-    """Expose calculator metadata to the frontend."""
-    return jsonify({"calculators": get_calculator_configs()})
-
-
-@app.post("/calculators/<calc_id>")
-def run_calculator_endpoint(calc_id: str):
-    """Execute a calculator with the provided payload."""
-    data = request.get_json(force=True) or {}
-    try:
-        result = run_calculator(calc_id, data)
-    except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
-    return jsonify({"result": result})
-
+    """Serve the prototype UI"""
+    return render_template("index.html", food_options=FOOD_CALORIES)
 
 #summary 
 @app.post("/analyze")
@@ -575,53 +415,17 @@ def analyze():
     net_intake = calorie_intake - calories_burned
     goal = recommend_goal(net_intake, maintenance_calories)
     bmi_value, bmi_category = calculate_bmi(height_cm, weight_kg)
-    exercise_display = " + ".join(detail["label"] for detail in exercise_details)
 
-    user = current_user()
-    previous_steps: int | None = None
-    if user:
-        previous_entries = fetch_recent_check_ins(user["id"], limit=1)
-        if previous_entries:
-            previous_steps = previous_entries[0].get("steps")  # type: ignore[index]
-
-    micro_coach_text = generate_micro_coach_text(
-        selected_foods,
-        step_count,
-        calorie_intake,
-        maintenance_calories,
-        net_intake,
-        goal,
-        previous_steps=previous_steps,
-    )
-
-    response = {
-        "calorieIntake": calorie_intake,
-        "caloriesBurned": calories_burned,
-        "maintenanceCalories": maintenance_calories,
-        "recommendedGoal": goal,
-        "bmi": bmi_value,
-        "bmiCategory": bmi_category,
-        "exerciseId": primary_exercise["id"],
-        "exerciseLabel": exercise_display or primary_exercise["label"],
-        "exerciseDisplay": exercise_display or primary_exercise["label"],
-        "exerciseIntensity": primary_exercise["intensity"],
-        "exerciseDetails": exercise_details,
-        "microCoachText": micro_coach_text,
-    }
-
-    if user:
-        record_payload = {
-            **data,
-            **response,
-            "exerciseEntries": exercise_entries,
-            "foodPortions": food_portions,
+    return jsonify(
+        {
+            "calorieIntake": calorie_intake,
+            "caloriesBurned": calories_burned,
+            "maintenanceCalories": maintenance_calories,
+            "recommendedGoal": goal,
+            "bmi": bmi_value,
+            "bmiCategory": bmi_category,
         }
-        record_check_in(user["id"], record_payload)
-        response["history"] = enrich_history_entries(
-            fetch_recent_check_ins(user["id"], limit=7)
-        )
-
-    return jsonify(response)
+    )
 
 
 @app.post("/predict-food")
@@ -646,21 +450,62 @@ def predict_food():
             MODEL_PATH,
             temp_path,
             CLASS_NAMES,
-            k=3,
-            model=FOOD_MODEL,
         )
-    except Exception as exc:  # noqa: BLE001
-        return jsonify({"error": f"Prediction failed: {exc}"}), 500
     finally:
         temp_path.unlink(missing_ok=True)
 
     return jsonify(
-        {
-            "predictions": [
-                {"label": label, "probability": prob} for label, prob in predictions
-            ]
-        }
+        {"predictions": [{"label": label, "probability": score} for label, score in predictions]}
     )
+
+
+@app.post("/register")
+def register():
+    data = request.get_json(force=True)
+    name = data.get("name", "").strip()
+    email = data.get("email", "").lower().strip()
+    password = data.get("password", "")
+
+    if not name or not email or not password:
+        return jsonify({"error": "Name, email, and password are required."}), 400
+
+    existing = find_user_by_email(email)
+    if existing:
+        return jsonify({"error": "Email already registered."}), 400
+
+    password_hash = generate_password_hash(password)
+    user = create_user(name, email, password_hash)
+    login_user(user)
+    return jsonify({"user": {"id": user["id"], "name": user["name"], "email": user["email"]}})
+
+
+@app.post("/login")
+def login():
+    data = request.get_json(force=True)
+    email = data.get("email", "").lower().strip()
+    password = data.get("password", "")
+
+    user = find_user_by_email(email)
+    if not user or not check_password_hash(user["password_hash"], password):  # type: ignore[index]
+        return jsonify({"error": "Invalid credentials."}), 400
+
+    login_user(user)
+    return jsonify({"user": {"id": user["id"], "name": user["name"], "email": user["email"]}})
+
+
+@app.post("/logout")
+def logout():
+    logout_user()
+    return jsonify({"ok": True})
+
+
+@app.get("/history")
+def history():
+    user = current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    records = fetch_recent_check_ins(user["id"], limit=14)
+    return jsonify({"history": records})
 
 
 @app.get("/history")

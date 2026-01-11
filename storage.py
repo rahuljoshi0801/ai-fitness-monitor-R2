@@ -96,6 +96,7 @@ def record_check_in(user_id: int, payload: dict[str, Any]) -> None:
     created_at = datetime.utcnow().isoformat()
     foods = ", ".join(payload.get("foods", []))
     steps = int(payload.get("steps", 0))
+<<<<<<< HEAD
     exercise_entries = payload.get("exerciseEntries") or payload.get("exercise_entries") or []
     primary_exercise_id = ""
     if isinstance(exercise_entries, list) and exercise_entries:
@@ -111,6 +112,9 @@ def record_check_in(user_id: int, payload: dict[str, Any]) -> None:
         or payload.get("workoutIntensity")
         or ""
     )
+=======
+    workout_intensity = payload.get("workoutIntensity", "")
+>>>>>>> 78f879e262dae0458c71165928181f9fca795731
 
     with _connect() as conn:
         conn.execute(
@@ -153,7 +157,10 @@ def fetch_recent_check_ins(user_id: int, limit: int = 7) -> list[dict[str, Any]]
             "foods": row["foods"],
             "steps": row["steps"],
             "workoutIntensity": row["workout_intensity"],
+<<<<<<< HEAD
             "exerciseId": row["workout_intensity"],
+=======
+>>>>>>> 78f879e262dae0458c71165928181f9fca795731
             "calorieIntake": row["calorie_intake"],
             "caloriesBurned": row["calories_burned"],
             "maintenanceCalories": row["maintenance_calories"],
@@ -162,6 +169,7 @@ def fetch_recent_check_ins(user_id: int, limit: int = 7) -> list[dict[str, Any]]
             "recommendedGoal": row["recommended_goal"],
         }
         summary_json = row["summary_json"]
+<<<<<<< HEAD
         summary_data: dict[str, Any] | None = None
         if summary_json:
             try:
@@ -301,5 +309,12 @@ def fetch_check_ins_since(user_id: int, since: datetime) -> list[dict[str, Any]]
             micro_text = summary_data.get("microCoachText")
             if micro_text:
                 entry["microCoachText"] = micro_text
+=======
+        if summary_json:
+            try:
+                entry["summary"] = json.loads(summary_json)
+            except json.JSONDecodeError:
+                entry["summary"] = None
+>>>>>>> 78f879e262dae0458c71165928181f9fca795731
         results.append(entry)
     return results
