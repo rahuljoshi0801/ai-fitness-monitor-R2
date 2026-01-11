@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 import csv
 import io
+import sys
 from datetime import datetime, timedelta
 
 sys.path.append(str(Path(__file__).resolve().parent))
@@ -497,15 +498,6 @@ def login():
 def logout():
     logout_user()
     return jsonify({"ok": True})
-
-
-@app.get("/history")
-def history():
-    user = current_user()
-    if not user:
-        return jsonify({"error": "Unauthorized"}), 401
-    records = fetch_recent_check_ins(user["id"], limit=14)
-    return jsonify({"history": records})
 
 
 @app.get("/history")
