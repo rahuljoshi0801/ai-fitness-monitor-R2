@@ -4,9 +4,53 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Anavrin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=General+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   </head>
   <body>
+<<<<<<< HEAD
+    {% if user %}
+    <div class="auth-strip">
+      <div>
+        <span class="auth-pill">Signed in</span>
+        <strong>{{ user.name }}</strong>
+        <span class="auth-email">{{ user.email }}</span>
+      </div>
+      <button id="logout-btn" class="ghost-button">Log out</button>
+    </div>
+    {% else %}
+    <div class="auth-strip auth-strip-guest">
+      <div>
+        <strong>Welcome to Anavrin</strong>
+        <span class="auth-email">Log in to save your reflections</span>
+      </div>
+      <div class="auth-actions">
+        <a class="ghost-button" href="{{ url_for('login_page') }}">Sign in</a>
+        <a class="primary-button" href="{{ url_for('register_page') }}">Create account</a>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="app">
+      <header class="hero">
+        <div>
+          <p class="app-pill">Daily ritual</p>
+          <h1>Track today with calm clarity</h1>
+          <p class="app-subtitle">
+            Upload a quick meal snapshot, log your movement, and let Anavrin weave the story for you.
+          </p>
+        </div>
+      </header>
+
+      <main class="dashboard-layout">
+        <section class="panel primary-panel">
+          <form id="fitness-form" class="form-stack">
+=======
     <div class ="app">
       <header>
         <div class="auth-strip">
@@ -49,6 +93,7 @@
 
       <main>
         <form id="fitness-form">
+>>>>>>> 78f879e262dae0458c71165928181f9fca795731
           <section>
             <h2>Meal snapshot here </h2>
             <p class="section-hint">
@@ -66,26 +111,39 @@
           </section>
 
           <section>
-            <h2>2. Confirm what you ate</h2>
+            <h2>Meals & portions</h2>
             <p class="section-hint">
-              Confirm the food items
+              Tag the core items you had and choose a quick portion for better estimates.
             </p>
-            <div class="food-grid">
+            <div class="food-grid" id="food-grid">
               {% for item, calories in food_options.items() %}
-              <label>
+              <label class="food-option" data-food-id="{{ item }}">
                 <input type="checkbox" name="foods" value="{{ item }}" />
                 <span>{{ item|title }}</span>
+                {% if item in portion_config %}
+                <div class="portion-select-wrapper">
+                  <span>Portion</span>
+                  <div class="portion-buttons">
+                    {% for option in portion_config[item].options %}
+                    <button
+                      type="button"
+                      class="portion-button"
+                      data-food-id="{{ item }}"
+                      data-multiplier="{{ option.multiplier }}"
+                    >
+                      {{ option.label }}
+                    </button>
+                    {% endfor %}
+                  </div>
+                </div>
+                {% endif %}
               </label>
               {% endfor %}
-              <label>
-                <input type="checkbox" name="foods" value="biryani" />
-                <span>Biryani</span>
-              </label>
             </div>
           </section>
 
           <section>
-            <h2>3. Body stats</h2>
+            <h2>Body stats</h2>
             <p class="section-hint">
               For BMI insights
             </p>
@@ -118,27 +176,78 @@
           </section>
 
           <section>
-            <h2>4. Movement vibes</h2>
+            <h2>Movement vibes</h2>
             <p class="section-hint">
-              Tell us how intense things felt. Notes are optional voice-notes in text.
+              Pick what you actually did today—each session comes with a built-in burn estimate.
+              Notes are optional voice-notes in text.
             </p>
-            <label>
-              Intensity
-              <select name="workoutIntensity">
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </label>
+            <div class="exercise-grid">
+              {% for exercise_id, exercise in exercise_options.items() %}
+              <div
+                class="exercise-card"
+                data-exercise-id="{{ exercise_id }}"
+                data-exercise-label="{{ exercise.label }}"
+                data-default-sets="{{ exercise.default_sets or 0 }}"
+                data-default-reps="{{ exercise.default_reps or 0 }}"
+                data-default-duration="{{ exercise.default_duration or 30 }}"
+              >
+                <div class="exercise-card-main">
+                  <label class="exercise-checkbox-wrapper">
+                    <input
+                      type="checkbox"
+                      class="exercise-checkbox"
+                      name="exerciseIds"
+                      value="{{ exercise_id }}"
+                      {% if loop.first %}checked{% endif %}
+                    />
+                    <span class="exercise-name">{{ exercise.label }}</span>
+                  </label>
+                  <small class="exercise-meta">
+                    {{ exercise.intensity.capitalize() }} · ~{{ exercise.burn }} kcal
+                  </small>
+                </div>
+                <div class="exercise-fields">
+                  <label>
+                    Sets
+                    <input
+                      type="number"
+                      class="exercise-input exercise-sets"
+                      min="0"
+                      value="{{ exercise.default_sets or 0 }}"
+                    />
+                  </label>
+                  <label>
+                    Reps
+                    <input
+                      type="number"
+                      class="exercise-input exercise-reps"
+                      min="0"
+                      value="{{ exercise.default_reps or 0 }}"
+                    />
+                  </label>
+                  <label>
+                    Duration (min)
+                    <input
+                      type="number"
+                      class="exercise-input exercise-duration"
+                      min="5"
+                      step="5"
+                      value="{{ exercise.default_duration or 30 }}"
+                    />
+                  </label>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
             <textarea
               name="workoutNotes"
               rows="3"
-              placeholder="Optional: note reps/sets or the type of workout for your own tracking."
+              placeholder="Optional: note reps/sets or how the session felt."
             ></textarea>
           </section>
 
           <section>
-            <h2>5. Steps</h2>
+            <h2>Steps</h2>
             <p class="section-hint">
               Enter your step count here  
             </p>
@@ -148,40 +257,106 @@
             </label>
           </section>
 
-          <button type="submit">Generate Summary</button>
-        </form>
-
-        <section id="result" class="hidden">
-          <h2>Daily reflection</h2>
-          <p class="section-hint">
-            Here’s what today looks like. Small steps count, so celebrate them.
-          </p>
-          <div class="summary-grid">
-            <article>
-              <h3>Calorie Intake</h3>
-              <p id="calorie-intake">-</p>
-            </article>
-            <article>
-              <h3>Calories Burned</h3>
-              <p id="calories-burned">-</p>
-            </article>
-            <article>
-              <h3>Maintenance Target</h3>
-              <p id="maintenance-calories">-</p>
-            </article>
-            <article>
-              <h3>Recommended Goal</h3>
-              <p id="recommended-goal">-</p>
-            </article>
-            <article>
-              <h3>BMI</h3>
-              <p id="bmi-value">-</p>
-              <small id="bmi-category">-</small>
-            </article>
-          </div>
-          <p id="summary-note" class="summary-note hidden"></p>
+            <button type="submit" class="primary-cta">Generate summary</button>
+          </form>
         </section>
 
+<<<<<<< HEAD
+        <aside class="side-column">
+          <section id="result" class="panel insight-panel hidden">
+            <div class="panel-head">
+              <p class="panel-subtitle">Daily reflection</p>
+              <h2>Here’s what today looks like</h2>
+            </div>
+            <div class="summary-grid">
+              <article>
+                <h3>Calorie Intake</h3>
+                <p id="calorie-intake">-</p>
+              </article>
+              <article>
+                <h3>Calories Burned</h3>
+                <p id="calories-burned">-</p>
+              </article>
+              <article>
+                <h3>Maintenance Target</h3>
+                <p id="maintenance-calories">-</p>
+              </article>
+              <article>
+                <h3>Recommended Goal</h3>
+                <p id="recommended-goal">-</p>
+              </article>
+              <article class="movement-summary">
+                <h3>Movement</h3>
+                <p id="exercise-label">-</p>
+                <small id="exercise-intensity">-</small>
+                <ul id="exercise-detail-list" class="exercise-detail-list"></ul>
+              </article>
+              <article>
+                <h3>BMI</h3>
+                <p id="bmi-value">-</p>
+                <small id="bmi-category">-</small>
+              </article>
+            </div>
+            <div class="micro-coach-card hidden" id="micro-coach-card">
+              <p class="micro-coach-label">Micro-coach</p>
+              <p id="micro-coach-text">No lectures—just keep stacking calm reps.</p>
+            </div>
+            <p id="summary-note" class="summary-note hidden"></p>
+          </section>
+
+          <section id="calculator-lab" class="panel secondary-panel">
+            <div class="panel-head">
+              <p class="panel-subtitle">Need a quick check?</p>
+              <h2>Fitness calculators</h2>
+            </div>
+            <div class="calculator-panel">
+              <label class="calculator-select">
+                Calculator
+                <select id="calculator-select">
+                  <option value="">Choose a calculator</option>
+                  {% for calc in calculators %}
+                  <option value="{{ calc.id }}">{{ calc.label }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+
+              <form id="calculator-form" class="calculator-form hidden">
+                <div id="calculator-fields" class="calculator-fields"></div>
+                <button type="submit">Run calculator</button>
+              </form>
+
+              <div id="calculator-output" class="calculator-output hidden">
+                <h3>Results</h3>
+                <dl id="calculator-result-list"></dl>
+              </div>
+            </div>
+          </section>
+
+          {% if user %}
+          <section id="history-section" class="panel secondary-panel">
+            <div class="panel-head">
+              <p class="panel-subtitle">Recent reflections</p>
+              <h2>Keep stacking consistent days</h2>
+            </div>
+            <div class="history-filters">
+              <label>
+                From
+                <input type="date" id="history-from" />
+              </label>
+              <label>
+                To
+                <input type="date" id="history-to" />
+              </label>
+              <button type="button" id="history-filter-btn">Apply</button>
+            </div>
+            <ul class="history-list" id="history-list"></ul>
+            <button type="button" id="history-load-more" class="ghost-button hidden">
+              Load more
+            </button>
+          </section>
+          {% endif %}
+        </aside>
+=======
         {% if user %}
         <section id="history-section">
           <h2>Recent reflections</h2>
@@ -209,20 +384,292 @@
           {% endif %}
         </section>
         {% endif %}
+>>>>>>> 78f879e262dae0458c71165928181f9fca795731
       </main>
     </div>
 
     <script>
+<<<<<<< HEAD
+      const currentUser = {{ (user or None) | tojson | safe }};
+      const historyState = {{ (history or []) | tojson | safe }};
+      const calculatorConfigs = {{ (calculators or []) | tojson | safe }};
+      const calculatorsById = Object.fromEntries(
+        calculatorConfigs.map((cfg) => [cfg.id, cfg])
+      );
+=======
       const currentUser = {{ user or 'null' }};
       const historyState = {{ history or [] | tojson }};
+>>>>>>> 78f879e262dae0458c71165928181f9fca795731
       const foodCheckboxes = Array.from(
         document.querySelectorAll('input[name="foods"]')
+      );
+      const foodOptionElements = Array.from(document.querySelectorAll(".food-option"));
+      const portionButtons = Array.from(document.querySelectorAll(".portion-button"));
+      const foodPortionSelections = new Map();
+      const exerciseCards = Array.from(
+        document.querySelectorAll(".exercise-card")
+      );
+      const exerciseCheckboxes = Array.from(
+        document.querySelectorAll(".exercise-checkbox")
       );
       const photoInput = document.getElementById("meal-photo");
       const predictionStatus = document.getElementById("prediction-status");
       const predictionPanel = document.getElementById("prediction-panel");
       const predictionList = document.getElementById("prediction-list");
       const summaryNote = document.getElementById("summary-note");
+      const microCoachCard = document.getElementById("micro-coach-card");
+      const microCoachTextEl = document.getElementById("micro-coach-text");
+      const historyList = document.getElementById("history-list");
+      const historyFromInput = document.getElementById("history-from");
+      const historyToInput = document.getElementById("history-to");
+      const historyFilterBtn = document.getElementById("history-filter-btn");
+      const historyLoadMoreBtn = document.getElementById("history-load-more");
+      const logoutBtn = document.getElementById("logout-btn");
+      const calculatorSelect = document.getElementById("calculator-select");
+      const calculatorForm = document.getElementById("calculator-form");
+      const calculatorFields = document.getElementById("calculator-fields");
+      const calculatorOutput = document.getElementById("calculator-output");
+      const calculatorResultList = document.getElementById("calculator-result-list");
+      const exerciseDetailList = document.getElementById("exercise-detail-list");
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", async () => {
+          try {
+            await fetch("/logout", { method: "POST" });
+            window.location.href = "{{ url_for('login_page') }}";
+          } catch (error) {
+            alert("Logout failed. Please try again.");
+          }
+        });
+      }
+
+      let historyOffset = historyState.length;
+      const historyLimit = 7;
+
+      function toNumber(value, fallback = 0) {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+      }
+
+      function syncExerciseCard(card) {
+        const checkbox = card.querySelector(".exercise-checkbox");
+        const inputs = card.querySelectorAll(".exercise-input");
+        const isActive = checkbox.checked;
+        card.classList.toggle("exercise-card-active", isActive);
+        inputs.forEach((input) => {
+          input.disabled = !isActive;
+          if (!isActive) {
+            if (input.classList.contains("exercise-sets")) {
+              input.value = card.dataset.defaultSets || 0;
+            } else if (input.classList.contains("exercise-reps")) {
+              input.value = card.dataset.defaultReps || 0;
+            } else if (input.classList.contains("exercise-duration")) {
+              input.value = card.dataset.defaultDuration || 30;
+            }
+          }
+        });
+      }
+
+      function initializeExerciseCards() {
+        exerciseCards.forEach((card) => {
+          const checkbox = card.querySelector(".exercise-checkbox");
+          syncExerciseCard(card);
+          checkbox.addEventListener("change", () => syncExerciseCard(card));
+        });
+      }
+
+      initializeExerciseCards();
+
+      function applyPortionSelection(foodId, button, options = {}) {
+        if (!foodId || !button) return;
+        const { autoCheck = true } = options;
+        const buttonGroup = button.closest(".portion-buttons");
+        buttonGroup?.querySelectorAll(".portion-button").forEach((btn) => {
+          btn.classList.remove("portion-button-active");
+        });
+        button.classList.add("portion-button-active");
+        const multiplier = Number(button.dataset.multiplier);
+        const normalizedMultiplier = Number.isFinite(multiplier) ? multiplier : 1;
+        foodPortionSelections.set(foodId, {
+          id: foodId,
+          multiplier: normalizedMultiplier,
+        });
+        if (autoCheck) {
+          const checkbox = document.querySelector(`input[name="foods"][value="${foodId}"]`);
+          if (checkbox && !checkbox.checked) {
+            checkbox.checked = true;
+            updateFoodOptionState(foodId, true);
+          }
+        }
+      }
+
+      function ensureDefaultPortion(foodId) {
+        if (!foodId || foodPortionSelections.has(foodId)) return;
+        const option = document.querySelector(`.food-option[data-food-id="${foodId}"]`);
+        if (!option) return;
+        const firstButton = option.querySelector(".portion-button");
+        if (firstButton) {
+          applyPortionSelection(foodId, firstButton, { autoCheck: false });
+        }
+      }
+
+      function updateFoodOptionState(foodId, isChecked) {
+        const option = document.querySelector(`.food-option[data-food-id="${foodId}"]`);
+        if (!option) return;
+        option.classList.toggle("food-option-active", Boolean(isChecked));
+        if (isChecked) {
+          ensureDefaultPortion(foodId);
+        } else {
+          foodPortionSelections.delete(foodId);
+          option.querySelectorAll(".portion-button-active").forEach((btn) =>
+            btn.classList.remove("portion-button-active")
+          );
+        }
+      }
+
+      function getSelectedFoodPortions() {
+        return Array.from(foodPortionSelections.values());
+      }
+
+      function clearAllFoodSelections() {
+        foodCheckboxes.forEach((checkbox) => {
+          checkbox.checked = false;
+          updateFoodOptionState(checkbox.value, false);
+        });
+      }
+
+      foodCheckboxes.forEach((checkbox) => {
+        const foodId = checkbox.value;
+        updateFoodOptionState(foodId, checkbox.checked);
+        checkbox.addEventListener("change", (event) => {
+          updateFoodOptionState(foodId, event.target.checked);
+        });
+      });
+
+      portionButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const foodId = button.dataset.foodId;
+          if (!foodId) return;
+          applyPortionSelection(foodId, button);
+          updateFoodOptionState(foodId, true);
+        });
+      });
+
+      function renderHistoryEntries(entries, append = false) {
+        if (!historyList) return;
+        if (!append) {
+          historyList.innerHTML = "";
+        }
+
+        if (!entries.length && !append) {
+          historyList.innerHTML =
+            '<li class="history-empty">No check-ins yet. Today’s the perfect day to start.</li>';
+        }
+
+        entries.forEach((entry) => {
+          const exercises =
+            entry.exerciseDetails?.map((detail) => detail.label).join(" + ") ||
+            entry.exerciseDisplay ||
+            entry.exerciseLabel ||
+            entry.workoutIntensity ||
+            "—";
+          const intensityRaw = entry.exerciseIntensity || "";
+          const intensityLabel = intensityRaw
+            ? `${intensityRaw.charAt(0).toUpperCase()}${intensityRaw.slice(1)}`
+            : "";
+          const movementMeta = [exercises, intensityLabel ? `${intensityLabel} intensity` : null, `${entry.steps ?? 0} steps`]
+            .filter(Boolean)
+            .join(" · ");
+          const li = document.createElement("li");
+          const header = document.createElement("div");
+          const title = document.createElement("strong");
+          title.textContent = entry.createdAt?.substring(0, 10) || "—";
+          const metaSpan = document.createElement("span");
+          metaSpan.textContent = movementMeta;
+          header.append(title, metaSpan);
+
+          const metrics = document.createElement("div");
+          metrics.className = "history-metrics";
+          ["calorieIntake", "caloriesBurned", "recommendedGoal"].forEach(
+            (key, index) => {
+              const metric = document.createElement("span");
+              if (key === "calorieIntake") {
+                metric.textContent = `${entry.calorieIntake ?? 0} kcal in`;
+              } else if (key === "caloriesBurned") {
+                metric.textContent = `${entry.caloriesBurned ?? 0} kcal out`;
+              } else {
+                metric.textContent = entry.recommendedGoal || "—";
+              }
+              metrics.appendChild(metric);
+            }
+          );
+
+          li.append(header, metrics);
+
+          if (entry.exerciseDetails?.length) {
+            const detailList = createExerciseDetailList(entry.exerciseDetails);
+            li.appendChild(detailList);
+          }
+          if (entry.microCoachText) {
+            const microNote = document.createElement("p");
+            microNote.className = "history-micro-note";
+            microNote.textContent = entry.microCoachText;
+            li.appendChild(microNote);
+          }
+
+          historyList.appendChild(li);
+        });
+      }
+
+      async function fetchHistory(append = false) {
+        if (!historyList) return;
+        const params = new URLSearchParams({
+          limit: historyLimit.toString(),
+          offset: (append ? historyOffset : 0).toString(),
+        });
+        const from = historyFromInput?.value;
+        const to = historyToInput?.value;
+        if (from) params.append("from", from);
+        if (to) params.append("to", to);
+
+        try {
+          const resp = await fetch(`/history?${params}`);
+          if (resp.status === 401) {
+            window.location.href = "{{ url_for('login_page') }}";
+            return;
+          }
+          if (!resp.ok) throw new Error("Failed to fetch history");
+          const data = await resp.json();
+          renderHistoryEntries(data.entries, append);
+          historyOffset = append ? historyOffset + data.entries.length : data.entries.length;
+          if (data.hasMore) {
+            historyLoadMoreBtn?.classList.remove("hidden");
+          } else {
+            historyLoadMoreBtn?.classList.add("hidden");
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Could not load history.");
+        }
+      }
+
+      historyFilterBtn?.addEventListener("click", () => {
+        historyOffset = 0;
+        fetchHistory(false);
+      });
+
+      historyLoadMoreBtn?.addEventListener("click", () => {
+        fetchHistory(true);
+      });
+
+      if (currentUser && historyList) {
+        renderHistoryEntries(historyState);
+        if (historyState.length === 0) {
+          historyLoadMoreBtn?.classList.add("hidden");
+        } else {
+          historyLoadMoreBtn?.classList.remove("hidden");
+        }
+      }
 
       async function requestPredictions(file) {
         const body = new FormData();
@@ -240,9 +687,7 @@
 
       function setPredictedFoods(predictions) {
         // Clear previously checked boxes.
-        foodCheckboxes.forEach((checkbox) => {
-          checkbox.checked = false;
-        });
+        clearAllFoodSelections();
 
         predictions.forEach((prediction) => {
           const match = foodCheckboxes.find(
@@ -250,6 +695,7 @@
           );
           if (match) {
             match.checked = true;
+            updateFoodOptionState(match.value, true);
           }
         });
       }
@@ -290,6 +736,99 @@
 
       const form = document.getElementById("fitness-form");
       const resultSection = document.getElementById("result");
+      const exerciseLabelEl = document.getElementById("exercise-label");
+      const exerciseIntensityEl = document.getElementById("exercise-intensity");
+
+      function ensureAtLeastOneExercise() {
+        if (exerciseCheckboxes.some((checkbox) => checkbox.checked)) {
+          return;
+        }
+        if (exerciseCheckboxes[0]) {
+          exerciseCheckboxes[0].checked = true;
+          syncExerciseCard(exerciseCheckboxes[0].closest(".exercise-card"));
+        }
+      }
+
+      function getExerciseEntries() {
+        ensureAtLeastOneExercise();
+        const entries = [];
+        exerciseCards.forEach((card) => {
+          const checkbox = card.querySelector(".exercise-checkbox");
+          if (!checkbox.checked) return;
+          const setsInput = card.querySelector(".exercise-sets");
+          const repsInput = card.querySelector(".exercise-reps");
+          const durationInput = card.querySelector(".exercise-duration");
+          entries.push({
+            id: checkbox.value,
+            sets: toNumber(setsInput?.value, toNumber(card.dataset.defaultSets, 0)),
+            reps: toNumber(repsInput?.value, toNumber(card.dataset.defaultReps, 0)),
+            duration: toNumber(
+              durationInput?.value,
+              toNumber(card.dataset.defaultDuration, 30)
+            ),
+          });
+        });
+        return entries.length ? entries : [{ id: exerciseCheckboxes[0]?.value }];
+      }
+
+      function formatExerciseList(details) {
+        if (!details || !details.length) return "";
+        return details.map((detail) => detail.label).join(" + ");
+      }
+
+      function createExerciseDetailList(details) {
+        const list = document.createElement("ul");
+        list.className = "exercise-detail-list";
+        details.forEach((detail) => {
+          const li = document.createElement("li");
+          const title = document.createElement("strong");
+          title.textContent = detail.label;
+          const meta = document.createElement("span");
+          const parts = [];
+          if (detail.sets) parts.push(`${detail.sets} sets`);
+          if (detail.reps) parts.push(`${detail.reps} reps`);
+          if (detail.duration) parts.push(`${detail.duration} min`);
+          const burnValue =
+            detail.estimatedBurn ??
+            detail.estimated_burn ??
+            detail.burn ??
+            null;
+          if (burnValue) parts.push(`~${burnValue} kcal`);
+          meta.textContent = parts.join(" · ");
+          li.append(title, meta);
+          list.appendChild(li);
+        });
+        return list;
+      }
+
+      function renderExerciseDetailItems(container, details) {
+        if (!container) return;
+        container.innerHTML = "";
+        if (!details || !details.length) {
+          container.classList.add("hidden");
+          return;
+        }
+        container.classList.remove("hidden");
+        details.forEach((detail) => {
+          const li = document.createElement("li");
+          const title = document.createElement("strong");
+          title.textContent = detail.label;
+          const meta = document.createElement("span");
+          const segments = [];
+          if (detail.sets) segments.push(`${detail.sets} sets`);
+          if (detail.reps) segments.push(`${detail.reps} reps`);
+          if (detail.duration) segments.push(`${detail.duration} min`);
+          const burnValue =
+            detail.estimatedBurn ??
+            detail.estimated_burn ??
+            detail.burn ??
+            null;
+          if (burnValue) segments.push(`~${burnValue} kcal`);
+          meta.textContent = segments.join(" · ");
+          li.append(title, meta);
+          container.appendChild(li);
+        });
+      }
 
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -302,10 +841,12 @@
 
         const formData = new FormData(form);
         const selectedFoods = formData.getAll("foods");
-        const workoutIntensity = formData.get("workoutIntensity") || "low";
+        const exerciseEntries = getExerciseEntries();
+        const exerciseIds = exerciseEntries.map((entry) => entry.id);
         const steps = Number(formData.get("steps") || 0);
         const heightCm = Number(formData.get("heightCm") || 0);
         const weightKg = Number(formData.get("weightKg") || 0);
+        const foodPortions = getSelectedFoodPortions();
 
         try {
           const response = await fetch("/analyze", {
@@ -313,7 +854,9 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               foods: selectedFoods,
-              workoutIntensity,
+              foodPortions,
+              exerciseEntries,
+              exerciseIds,
               steps,
               heightCm,
               weightKg,
@@ -333,6 +876,22 @@
             data.maintenanceCalories + " kcal";
           document.getElementById("recommended-goal").textContent =
             data.recommendedGoal;
+          if (exerciseLabelEl) {
+            exerciseLabelEl.textContent =
+              formatExerciseList(data.exerciseDetails) ||
+              data.exerciseLabel ||
+              "—";
+          }
+          if (exerciseIntensityEl) {
+            const intensityText = data.exerciseIntensity
+              ? `${data.exerciseIntensity.charAt(0).toUpperCase()}${data.exerciseIntensity.slice(1)} intensity`
+              : "";
+            exerciseIntensityEl.textContent = intensityText || "";
+          }
+          renderExerciseDetailItems(
+            exerciseDetailList,
+            data.exerciseDetails || []
+          );
           const bmiValueEl = document.getElementById("bmi-value");
           const bmiCategoryEl = document.getElementById("bmi-category");
           if (data.bmi) {
@@ -356,6 +915,13 @@
             "Keep tuning in to your body—consistency beats perfection.";
           summaryNote.classList.remove("hidden");
 
+          if (data.microCoachText) {
+            microCoachTextEl.textContent = data.microCoachText;
+            microCoachCard.classList.remove("hidden");
+          } else {
+            microCoachCard.classList.add("hidden");
+          }
+
           resultSection.classList.remove("hidden");
         } catch (error) {
           alert(
@@ -364,6 +930,98 @@
           console.error(error);
         }
       });
+<<<<<<< HEAD
+
+      function renderCalculatorFields(calcId) {
+        const config = calculatorsById[calcId];
+        calculatorFields.innerHTML = "";
+        calculatorOutput.classList.add("hidden");
+        calculatorResultList.innerHTML = "";
+        if (!config) {
+          calculatorForm?.classList.add("hidden");
+          return;
+        }
+        calculatorForm?.classList.remove("hidden");
+        config.fields.forEach((field) => {
+          const wrapper = document.createElement("label");
+          wrapper.dataset.name = field.name;
+          wrapper.innerHTML = `<span>${field.label}</span>`;
+          let input;
+          if (field.type === "select" && field.options) {
+            input = document.createElement("select");
+            field.options.forEach((option) => {
+              const opt = document.createElement("option");
+              opt.value = option;
+              opt.textContent = option.replace("_", " ").replace(/\b\w/g, (c) =>
+                c.toUpperCase()
+              );
+              input.appendChild(opt);
+            });
+          } else {
+            input = document.createElement("input");
+            input.type = field.type === "number" ? "number" : "text";
+            if (field.min !== undefined) input.min = field.min;
+            if (field.max !== undefined) input.max = field.max;
+            if (!field.optional) input.required = true;
+            if (field.hint) input.placeholder = field.hint;
+          }
+          input.name = field.name;
+          wrapper.appendChild(input);
+          if (field.hint && input.tagName !== "INPUT") {
+            const hint = document.createElement("small");
+            hint.textContent = field.hint;
+            wrapper.appendChild(hint);
+          }
+          calculatorFields.appendChild(wrapper);
+        });
+      }
+
+      calculatorSelect?.addEventListener("change", (event) => {
+        renderCalculatorFields(event.target.value);
+      });
+
+      calculatorForm?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const calcId = calculatorSelect?.value;
+        if (!calcId) {
+          alert("Please choose a calculator first.");
+          return;
+        }
+        const config = calculatorsById[calcId];
+        if (!config) return;
+
+        const payload = {};
+        config.fields.forEach((field) => {
+          const input = calculatorFields.querySelector(`[name="${field.name}"]`);
+          payload[field.name] = input?.value ?? "";
+        });
+
+        try {
+          const resp = await fetch(`/calculators/${calcId}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await resp.json();
+          if (!resp.ok) {
+            throw new Error(data.error || "Calculator failed");
+          }
+
+          calculatorResultList.innerHTML = "";
+          Object.entries(data.result).forEach(([key, value]) => {
+            const term = document.createElement("dt");
+            term.textContent = key;
+            const detail = document.createElement("dd");
+            detail.textContent = Array.isArray(value)
+              ? value.join(" – ")
+              : value;
+            calculatorResultList.append(term, detail);
+          });
+          calculatorOutput.classList.remove("hidden");
+        } catch (error) {
+          alert(error.message || "Unable to run calculator right now.");
+          console.error(error);
+=======
       async function postJSON(url, payload) {
         const response = await fetch(url, {
           method: "POST",
@@ -415,6 +1073,7 @@
           location.reload();
         } catch (error) {
           alert(error.message);
+>>>>>>> 78f879e262dae0458c71165928181f9fca795731
         }
       });
     </script>

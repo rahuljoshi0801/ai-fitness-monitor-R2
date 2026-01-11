@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create account • Anavrin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body class="login-body">
+    <div class="login-card">
+      <header>
+        <p class="app-pill">Join the journey</p>
+        <h1>Create your Anavrin account</h1>
+        <p class="app-subtitle">
+          Capture meals, workouts, and goals in one place. A few details and you’re in.
+        </p>
+      </header>
+
+      <form id="register-form" class="stacked-form">
+        <input type="text" name="name" placeholder="Full name" required />
+        <input type="email" name="email" placeholder="Email" required />
+        <input type="password" name="password" placeholder="Password" minlength="6" required />
+        <button type="submit">Create account</button>
+      </form>
+
+      <p class="auth-note">
+        Already have an account? <a href="{{ url_for('login_page') }}">Sign in</a>
+      </p>
+    </div>
+
+    <script>
+      async function postJSON(url, payload) {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.error || "Something went wrong");
+        }
+        return response.json();
+      }
+
+      const registerForm = document.getElementById("register-form");
+      registerForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const formData = new FormData(registerForm);
+        try {
+          await postJSON("/register", {
+            name: formData.get("name"),
+            email: formData.get("email"),
+            password: formData.get("password"),
+          });
+          window.location.href = "/";
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -18,10 +18,22 @@ Instead of asking user to manually enter the food items our system allows the us
 The focus is mainly the indian food habits and make the system affordable, simple and relevent.
 
 ## Key features
+<<<<<<< HEAD
+Calorie estimate for common Indian foods
+consider workout intensity(reps and sets) along with daily steps
+Estimate maintenance calories
+Simple user interface
+Daily fitness report at the end of the day
+Micro-coach nudges that react to steps, meals, and calorie balance
+Smart portion presets for popular Indian meals with quick multipliers
+Weekly consistency tracker with streak counter and mini bar chart
+Exportable weekly reports (PDF/CSV) plus rolling 30-day averages for evaluations
+=======
 -Calorie estimate for common Indian foods
 -Consider workout intensity along with daily steps
 -Estimate maintenance calories
 -Simple user interface
+>>>>>>> 78f879e262dae0458c71165928181f9fca795731
 
 ## Working
 1. The user enter the photo of the food they consumed

@@ -96,7 +96,25 @@ def record_check_in(user_id: int, payload: dict[str, Any]) -> None:
     created_at = datetime.utcnow().isoformat()
     foods = ", ".join(payload.get("foods", []))
     steps = int(payload.get("steps", 0))
+<<<<<<< HEAD
+    exercise_entries = payload.get("exerciseEntries") or payload.get("exercise_entries") or []
+    primary_exercise_id = ""
+    if isinstance(exercise_entries, list) and exercise_entries:
+        first_entry = exercise_entries[0]
+        if isinstance(first_entry, dict):
+            primary_exercise_id = first_entry.get("id") or ""
+        elif isinstance(first_entry, str):
+            primary_exercise_id = first_entry
+
+    workout_intensity = (
+        primary_exercise_id
+        or payload.get("exerciseId")
+        or payload.get("workoutIntensity")
+        or ""
+    )
+=======
     workout_intensity = payload.get("workoutIntensity", "")
+>>>>>>> 78f879e262dae0458c71165928181f9fca795731
 
     with _connect() as conn:
         conn.execute(
@@ -139,6 +157,10 @@ def fetch_recent_check_ins(user_id: int, limit: int = 7) -> list[dict[str, Any]]
             "foods": row["foods"],
             "steps": row["steps"],
             "workoutIntensity": row["workout_intensity"],
+<<<<<<< HEAD
+            "exerciseId": row["workout_intensity"],
+=======
+>>>>>>> 78f879e262dae0458c71165928181f9fca795731
             "calorieIntake": row["calorie_intake"],
             "caloriesBurned": row["calories_burned"],
             "maintenanceCalories": row["maintenance_calories"],
@@ -147,10 +169,152 @@ def fetch_recent_check_ins(user_id: int, limit: int = 7) -> list[dict[str, Any]]
             "recommendedGoal": row["recommended_goal"],
         }
         summary_json = row["summary_json"]
+<<<<<<< HEAD
+        summary_data: dict[str, Any] | None = None
+        if summary_json:
+            try:
+                summary_data = json.loads(summary_json)
+            except json.JSONDecodeError:
+                summary_data = None
+
+        if summary_data:
+            entry["summary"] = summary_data
+            entry["exerciseEntries"] = summary_data.get("exerciseEntries")
+            entry["exerciseDetails"] = summary_data.get("exerciseDetails")
+            entry["exerciseDisplay"] = summary_data.get("exerciseDisplay") or summary_data.get("exerciseLabel")
+            entry["exerciseIntensity"] = summary_data.get("exerciseIntensity") or entry.get("exerciseIntensity")
+            micro_text = summary_data.get("microCoachText")
+            if micro_text:
+                entry["microCoachText"] = micro_text
+        results.append(entry)
+    return results
+
+
+def fetch_check_ins_paginated(
+    user_id: int,
+    limit: int = 10,
+    offset: int = 0,
+    from_date: str | None = None,
+    to_date: str | None = None,
+) -> dict[str, Any]:
+    """Return paginated, date-filtered check-ins for a user."""
+    query = "SELECT * FROM check_ins WHERE user_id = ?"
+    params: list[Any] = [user_id]
+
+    if from_date:
+        query += " AND date(created_at) >= date(?)"
+        params.append(from_date)
+    if to_date:
+        query += " AND date(created_at) <= date(?)"
+        params.append(to_date)
+
+    query += " ORDER BY datetime(created_at) DESC LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
+
+    with _connect() as conn:
+        rows = conn.execute(query, params).fetchall()
+        # Determine if more entries exist beyond this page
+        count_query = "SELECT COUNT(*) FROM check_ins WHERE user_id = ?"
+        count_params = [user_id]
+        if from_date:
+            count_query += " AND date(created_at) >= date(?)"
+            count_params.append(from_date)
+        if to_date:
+            count_query += " AND date(created_at) <= date(?)"
+            count_params.append(to_date)
+        total = conn.execute(count_query, count_params).fetchone()[0]
+        has_more = (offset + limit) < total
+
+    results: list[dict[str, Any]] = []
+    for row in rows:
+        entry = {
+            "id": row["id"],
+            "createdAt": row["created_at"],
+            "foods": row["foods"],
+            "steps": row["steps"],
+            "workoutIntensity": row["workout_intensity"],
+            "exerciseId": row["workout_intensity"],
+            "calorieIntake": row["calorie_intake"],
+            "caloriesBurned": row["calories_burned"],
+            "maintenanceCalories": row["maintenance_calories"],
+            "bmi": row["bmi"],
+            "bmiCategory": row["bmi_category"],
+            "recommendedGoal": row["recommended_goal"],
+        }
+        summary_json = row["summary_json"]
+        summary_data: dict[str, Any] | None = None
+        if summary_json:
+            try:
+                summary_data = json.loads(summary_json)
+            except json.JSONDecodeError:
+                summary_data = None
+
+        if summary_data:
+            entry["summary"] = summary_data
+            entry["exerciseEntries"] = summary_data.get("exerciseEntries")
+            entry["exerciseDetails"] = summary_data.get("exerciseDetails")
+            entry["exerciseDisplay"] = summary_data.get("exerciseDisplay") or summary_data.get("exerciseLabel")
+            entry["exerciseIntensity"] = summary_data.get("exerciseIntensity") or entry.get("exerciseIntensity")
+            micro_text = summary_data.get("microCoachText")
+            if micro_text:
+                entry["microCoachText"] = micro_text
+        results.append(entry)
+
+    return {"entries": results, "hasMore": has_more, "total": total}
+
+
+def fetch_check_ins_since(user_id: int, since: datetime) -> list[dict[str, Any]]:
+    """Return all check-ins for a user since the provided timestamp."""
+    cutoff = since.isoformat()
+    with _connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT * FROM check_ins
+            WHERE user_id = ? AND datetime(created_at) >= datetime(?)
+            ORDER BY datetime(created_at) DESC
+            """,
+            (user_id, cutoff),
+        ).fetchall()
+
+    results: list[dict[str, Any]] = []
+    for row in rows:
+        entry = {
+            "id": row["id"],
+            "createdAt": row["created_at"],
+            "foods": row["foods"],
+            "steps": row["steps"],
+            "workoutIntensity": row["workout_intensity"],
+            "exerciseId": row["workout_intensity"],
+            "calorieIntake": row["calorie_intake"],
+            "caloriesBurned": row["calories_burned"],
+            "maintenanceCalories": row["maintenance_calories"],
+            "bmi": row["bmi"],
+            "bmiCategory": row["bmi_category"],
+            "recommendedGoal": row["recommended_goal"],
+        }
+        summary_json = row["summary_json"]
+        summary_data: dict[str, Any] | None = None
+        if summary_json:
+            try:
+                summary_data = json.loads(summary_json)
+            except json.JSONDecodeError:
+                summary_data = None
+
+        if summary_data:
+            entry["summary"] = summary_data
+            entry["exerciseEntries"] = summary_data.get("exerciseEntries")
+            entry["exerciseDetails"] = summary_data.get("exerciseDetails")
+            entry["exerciseDisplay"] = summary_data.get("exerciseDisplay") or summary_data.get("exerciseLabel")
+            entry["exerciseIntensity"] = summary_data.get("exerciseIntensity") or entry.get("exerciseIntensity")
+            micro_text = summary_data.get("microCoachText")
+            if micro_text:
+                entry["microCoachText"] = micro_text
+=======
         if summary_json:
             try:
                 entry["summary"] = json.loads(summary_json)
             except json.JSONDecodeError:
                 entry["summary"] = None
+>>>>>>> 78f879e262dae0458c71165928181f9fca795731
         results.append(entry)
     return results
