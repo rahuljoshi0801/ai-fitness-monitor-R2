@@ -95,7 +95,7 @@ Backend: Python(Flash)
 
 ## Screenrecording
 
-https://drive.google.com/file/d/1avxUC6yXU5PKSeI3clyAO5GC3GFMO9Vl/view?usp=sharing 
+https://drive.google.com/file/d/19gCFKG9OGlsFDItmZqIZqhGitCo6ULLH/view?usp=sharing
 
 ## Future Scope 
 1. Implement a machine learning based food recognition model for Indian food
