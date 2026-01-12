@@ -115,7 +115,7 @@ https://drive.google.com/file/d/19gCFKG9OGlsFDItmZqIZqhGitCo6ULLH/view?usp=shari
 -Piyush Palariya (AI/ML Developer)
 
 Note: 
-The project is developed for Round 1 prototype . 
+The project is developed for Round 2 prototype . 
 Larger files can be found in the gdrive link : https://drive.google.com/drive/folders/1awNis5qDmCYOIn1FVib9OLDbpXd23HzS?usp=sharing
 
 
