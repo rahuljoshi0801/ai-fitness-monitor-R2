@@ -13,7 +13,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   </head>
   <body>
-<<<<<<< HEAD
     {% if user %}
     <div class="auth-strip">
       <div>
@@ -50,50 +49,6 @@
       <main class="dashboard-layout">
         <section class="panel primary-panel">
           <form id="fitness-form" class="form-stack">
-=======
-    <div class ="app">
-      <header>
-        <div class="auth-strip">
-          <p class=" app-pill">Daily check-in  </p>
-          {% if user %}
-          <span>Signed in as <strong>{{ user.name }}</strong></span>
-          <button id="logout-btn" type="button" class="ghost-btn">Log out</button>
-          {% endif %}
-        </div>
-        <h1>Hi Welcome to Anavrin </h1>
-        <p class=" app-subtitle">
-          Send us the pictues of your plate and your workout details .
-        </p>
-      </header>
-
-      {% if not user %}
-      <section class="auth-panel">
-        <div>
-          <h3>Create your account</h3>
-          <form id="register-form" class="stacked-form">
-            <input type="text" name="name" placeholder="Name" required />
-            <input type="email" name="email" placeholder="Email" required />
-            <input type="password" name="password" placeholder="Password" required />
-            <button type="submit">Sign up</button>
-          </form>
-        </div>
-        <div>
-          <h3>Already here?</h3>
-          <form id="login-form" class="stacked-form">
-            <input type="email" name="email" placeholder="Email" required />
-            <input type="password" name="password" placeholder="Password" required />
-            <button type="submit">Log in</button>
-          </form>
-        </div>
-        <p class="auth-note">
-          Logging in lets us remember your history and tailor the suggestions you see.
-        </p>
-      </section>
-      {% endif %}
-
-      <main>
-        <form id="fitness-form">
->>>>>>> 78f879e262dae0458c71165928181f9fca795731
           <section>
             <h2>Meal snapshot here </h2>
             <p class="section-hint">
@@ -261,7 +216,6 @@
           </form>
         </section>
 
-<<<<<<< HEAD
         <aside class="side-column">
           <section id="result" class="panel insight-panel hidden">
             <div class="panel-head">
@@ -356,50 +310,16 @@
           </section>
           {% endif %}
         </aside>
-=======
-        {% if user %}
-        <section id="history-section">
-          <h2>Recent reflections</h2>
-          <p class="section-hint">
-            A quick peek at your latest entries. Keep stacking those consistent days.
-          </p>
-          {% if history %}
-          <ul class="history-list">
-            {% for entry in history %}
-            <li>
-              <div>
-                <strong>{{ entry.createdAt[:10] }}</strong>
-                <span>{{ entry.workoutIntensity|title }} · {{ entry.steps }} steps</span>
-              </div>
-              <div class="history-metrics">
-                <span>{{ entry.calorieIntake }} kcal in</span>
-                <span>{{ entry.caloriesBurned }} kcal out</span>
-                <span>{{ entry.recommendedGoal }}</span>
-              </div>
-            </li>
-            {% endfor %}
-          </ul>
-          {% else %}
-          <p class="section-hint">No check-ins yet. Today’s the perfect day to start.</p>
-          {% endif %}
-        </section>
-        {% endif %}
->>>>>>> 78f879e262dae0458c71165928181f9fca795731
       </main>
     </div>
 
     <script>
-<<<<<<< HEAD
       const currentUser = {{ (user or None) | tojson | safe }};
       const historyState = {{ (history or []) | tojson | safe }};
       const calculatorConfigs = {{ (calculators or []) | tojson | safe }};
       const calculatorsById = Object.fromEntries(
         calculatorConfigs.map((cfg) => [cfg.id, cfg])
       );
-=======
-      const currentUser = {{ user or 'null' }};
-      const historyState = {{ history or [] | tojson }};
->>>>>>> 78f879e262dae0458c71165928181f9fca795731
       const foodCheckboxes = Array.from(
         document.querySelectorAll('input[name="foods"]')
       );
@@ -930,7 +850,6 @@
           console.error(error);
         }
       });
-<<<<<<< HEAD
 
       function renderCalculatorFields(calcId) {
         const config = calculatorsById[calcId];
@@ -1021,59 +940,6 @@
         } catch (error) {
           alert(error.message || "Unable to run calculator right now.");
           console.error(error);
-=======
-      async function postJSON(url, payload) {
-        const response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (!response.ok) {
-          const err = await response.json().catch(() => ({}));
-          throw new Error(err.error || "Something went wrong");
-        }
-        return response.json();
-      }
-
-      const registerForm = document.getElementById("register-form");
-      registerForm?.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const formData = new FormData(registerForm);
-        try {
-          await postJSON("/register", {
-            name: formData.get("name"),
-            email: formData.get("email"),
-            password: formData.get("password"),
-          });
-          location.reload();
-        } catch (error) {
-          alert(error.message);
-        }
-      });
-
-      const loginForm = document.getElementById("login-form");
-      loginForm?.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const formData = new FormData(loginForm);
-        try {
-          await postJSON("/login", {
-            email: formData.get("email"),
-            password: formData.get("password"),
-          });
-          location.reload();
-        } catch (error) {
-          alert(error.message);
-        }
-      });
-
-      const logoutBtn = document.getElementById("logout-btn");
-      logoutBtn?.addEventListener("click", async () => {
-        try {
-          await postJSON("/logout", {});
-          location.reload();
-        } catch (error) {
-          alert(error.message);
->>>>>>> 78f879e262dae0458c71165928181f9fca795731
         }
       });
     </script>
