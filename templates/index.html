@@ -23,16 +23,18 @@
       <button id="logout-btn" class="ghost-button">Log out</button>
     </div>
     {% else %}
-    <div class="auth-strip auth-strip-guest">
+    <form id="login-banner-form" class="auth-strip auth-strip-guest">
       <div>
         <strong>Welcome to Anavrin</strong>
         <span class="auth-email">Log in to save your reflections</span>
       </div>
       <div class="auth-actions">
-        <a class="ghost-button" href="{{ url_for('login_page') }}">Sign in</a>
+        <input type="email" name="email" placeholder="Email" required />
+        <input type="password" name="password" placeholder="Password" required />
+        <button type="submit" class="ghost-button">Sign in</button>
         <a class="primary-button" href="{{ url_for('register_page') }}">Create account</a>
       </div>
-    </div>
+    </form>
     {% endif %}
 
     <div class="app">
@@ -351,6 +353,7 @@
       const calculatorOutput = document.getElementById("calculator-output");
       const calculatorResultList = document.getElementById("calculator-result-list");
       const exerciseDetailList = document.getElementById("exercise-detail-list");
+      const loginBannerForm = document.getElementById("login-banner-form");
 
       if (logoutBtn) {
         logoutBtn.addEventListener("click", async () => {
@@ -370,6 +373,28 @@
         const parsed = Number(value);
         return Number.isFinite(parsed) ? parsed : fallback;
       }
+
+      loginBannerForm?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const formData = new FormData(loginBannerForm);
+        try {
+          const response = await fetch("/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: formData.get("email"),
+              password: formData.get("password"),
+            }),
+          });
+          if (!response.ok) {
+            const payload = await response.json().catch(() => ({}));
+            throw new Error(payload.error || "Login failed");
+          }
+          window.location.reload();
+        } catch (error) {
+          alert(error.message || "Unable to log in right now.");
+        }
+      });
 
       function syncExerciseCard(card) {
         const checkbox = card.querySelector(".exercise-checkbox");

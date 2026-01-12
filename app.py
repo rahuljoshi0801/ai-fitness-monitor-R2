@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 import csv
@@ -12,7 +13,8 @@ sys.path.append(str(Path(__file__).resolve().parent))
 from tempfile import NamedTemporaryFile
 
 import tensorflow as tf
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, redirect, url_for, session
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from ml.food_classifier_training import (
     CLASS_NAMES_PATH,
@@ -20,6 +22,7 @@ from ml.food_classifier_training import (
     load_class_names,
     predict_top_k,
 )
+from calculators import get_calculator_configs, run_calculator
 from storage import (
     create_user,
     fetch_check_ins_paginated,
@@ -32,13 +35,30 @@ from storage import (
 )
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-key")
+init_db()
 # paths 
 MODEL_PATH = Path(MODEL_OUTPUT_PATH)
 CLASS_NAMES_FILE = Path(CLASS_NAMES_PATH)
 FOOD_MODEL: tf.keras.Model | None = None
 CLASS_NAMES: list[str] = []
 
-#calorie estimates for common Indian food items 
+
+def current_user() -> dict[str, Any] | None:
+    user_id = session.get("user_id")
+    if not user_id:
+        return None
+    return find_user_by_id(user_id)
+
+
+def login_user(user: dict[str, Any]) -> None:
+    session["user_id"] = user["id"]
+
+
+def logout_user() -> None:
+    session.pop("user_id", None)
+
+# calorie estimates for common Indian food items
 FOOD_CALORIES = {
     "roti": 120,
     "rice": 200,
@@ -48,17 +68,35 @@ FOOD_CALORIES = {
     "idli": 70,
     "dosa": 160,
     "curd": 100,
+    "poha": 180,
+    "upma": 190,
+    "biryani": 320,
+    "raita": 90,
+    "egg": 78,
+    "chicken": 250,
+    "fish": 220,
+    "salad": 80,
+    "fruits": 95,
 }
 
-PROTEIN_FOODS = {"paneer", "dal", "curd", "dosa", "idli"}
+PROTEIN_FOODS = {
+    "paneer",
+    "dal",
+    "curd",
+    "dosa",
+    "idli",
+    "egg",
+    "chicken",
+    "fish",
+}
 
 PORTION_CONFIG = {
     "roti": {
         "label": "Roti",
         "options": [
-            {"label": "1", "value": "1", "multiplier": 1},
-            {"label": "2", "value": "2", "multiplier": 2},
-            {"label": "3", "value": "3", "multiplier": 3},
+            {"label": "1 roti", "value": "1", "multiplier": 1},
+            {"label": "2 rotis", "value": "2", "multiplier": 2},
+            {"label": "3 rotis", "value": "3", "multiplier": 3},
         ],
     },
     "rice": {
@@ -69,12 +107,124 @@ PORTION_CONFIG = {
             {"label": "2 bowls", "value": "2", "multiplier": 2},
         ],
     },
+    "dal": {
+        "label": "Dal",
+        "options": [
+            {"label": "½ katori", "value": "0_5", "multiplier": 0.5},
+            {"label": "1 katori", "value": "1", "multiplier": 1},
+            {"label": "2 katoris", "value": "2", "multiplier": 2},
+        ],
+    },
+    "sabzi": {
+        "label": "Sabzi",
+        "options": [
+            {"label": "½ cup", "value": "0_5", "multiplier": 0.5},
+            {"label": "1 cup", "value": "1", "multiplier": 1},
+            {"label": "1½ cup", "value": "1_5", "multiplier": 1.5},
+        ],
+    },
     "paneer": {
         "label": "Paneer",
         "options": [
-            {"label": "50g", "value": "50", "multiplier": 0.5},
-            {"label": "100g", "value": "100", "multiplier": 1},
-            {"label": "150g", "value": "150", "multiplier": 1.5},
+            {"label": "50 g", "value": "50", "multiplier": 0.5},
+            {"label": "100 g", "value": "100", "multiplier": 1},
+            {"label": "150 g", "value": "150", "multiplier": 1.5},
+        ],
+    },
+    "idli": {
+        "label": "Idli",
+        "options": [
+            {"label": "1 idli", "value": "1", "multiplier": 1},
+            {"label": "2 idlis", "value": "2", "multiplier": 2},
+            {"label": "3 idlis", "value": "3", "multiplier": 3},
+        ],
+    },
+    "dosa": {
+        "label": "Dosa",
+        "options": [
+            {"label": "½ dosa", "value": "0_5", "multiplier": 0.5},
+            {"label": "1 dosa", "value": "1", "multiplier": 1},
+            {"label": "2 dosas", "value": "2", "multiplier": 2},
+        ],
+    },
+    "curd": {
+        "label": "Curd / yogurt",
+        "options": [
+            {"label": "½ cup", "value": "0_5", "multiplier": 0.5},
+            {"label": "1 cup", "value": "1", "multiplier": 1},
+            {"label": "1½ cup", "value": "1_5", "multiplier": 1.5},
+        ],
+    },
+    "poha": {
+        "label": "Poha",
+        "options": [
+            {"label": "½ bowl", "value": "0_5", "multiplier": 0.5},
+            {"label": "1 bowl", "value": "1", "multiplier": 1},
+            {"label": "1½ bowl", "value": "1_5", "multiplier": 1.5},
+        ],
+    },
+    "upma": {
+        "label": "Upma",
+        "options": [
+            {"label": "½ bowl", "value": "0_5", "multiplier": 0.5},
+            {"label": "1 bowl", "value": "1", "multiplier": 1},
+            {"label": "1½ bowl", "value": "1_5", "multiplier": 1.5},
+        ],
+    },
+    "biryani": {
+        "label": "Biryani",
+        "options": [
+            {"label": "½ plate (150 g)", "value": "0_5", "multiplier": 0.5},
+            {"label": "1 plate (300 g)", "value": "1", "multiplier": 1},
+            {"label": "Hearty plate (450 g)", "value": "1_5", "multiplier": 1.5},
+        ],
+    },
+    "raita": {
+        "label": "Raita",
+        "options": [
+            {"label": "½ cup", "value": "0_5", "multiplier": 0.5},
+            {"label": "1 cup", "value": "1", "multiplier": 1},
+            {"label": "1½ cup", "value": "1_5", "multiplier": 1.5},
+        ],
+    },
+    "egg": {
+        "label": "Egg",
+        "options": [
+            {"label": "1 egg", "value": "1", "multiplier": 1},
+            {"label": "2 eggs", "value": "2", "multiplier": 2},
+            {"label": "3 eggs", "value": "3", "multiplier": 3},
+        ],
+    },
+    "chicken": {
+        "label": "Chicken curry",
+        "options": [
+            {"label": "75 g", "value": "0_75", "multiplier": 0.75},
+            {"label": "150 g", "value": "1_5", "multiplier": 1.5},
+            {"label": "225 g", "value": "2_25", "multiplier": 2.25},
+        ],
+    },
+    "fish": {
+        "label": "Fish curry",
+        "options": [
+            {"label": "75 g", "value": "0_75", "multiplier": 0.75},
+            {"label": "150 g", "value": "1_5", "multiplier": 1.5},
+            {"label": "225 g", "value": "2_25", "multiplier": 2.25},
+        ],
+    },
+    "salad": {
+        "label": "Salad",
+        "options": [
+            {"label": "1 cup", "value": "1", "multiplier": 1},
+            {"label": "2 cups", "value": "2", "multiplier": 2},
+            {"label": "3 cups", "value": "3", "multiplier": 3},
+        ],
+    },
+    "fruits": {
+        "label": "Fruit bowl",
+        "options": [
+            {"label": "½ bowl", "value": "0_5", "multiplier": 0.5},
+            {"label": "1 bowl", "value": "1", "multiplier": 1},
+            {"label": "1½ bowl", "value": "1_5", "multiplier": 1.5},
         ],
     },
 }
@@ -331,6 +481,30 @@ def summarize_exercises(exercise_entries: list[dict[str, Any]]) -> tuple[list[di
     return metas, round(total_burn), primary
 
 
+def enrich_history_entry(entry: dict[str, Any]) -> dict[str, Any]:
+    """Normalize exercise detail metadata for a history entry."""
+    enriched = entry.copy()
+    raw_entries = (
+        entry.get("exerciseEntries")
+        or entry.get("exercise_entries")
+        or entry.get("exerciseIds")
+        or entry.get("exerciseId")
+        or entry.get("workoutIntensity")
+    )
+    normalized = normalize_exercise_entries(raw_entries)
+    details, burn, primary = summarize_exercises(normalized)
+    enriched["exerciseEntries"] = normalized
+    enriched["exerciseDetails"] = details
+    enriched["exerciseDisplay"] = " + ".join(detail["label"] for detail in details)
+    enriched["exerciseIntensity"] = primary.get("intensity")
+    enriched.setdefault("caloriesBurned", burn + int(enriched.get("steps", 0) * STEP_CALORIES_PER_STEP))
+    return enriched
+
+
+def enrich_history_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [enrich_history_entry(entry) for entry in entries]
+
+
 def estimate_calories_burned(step_count: int, exercise_entries: list[dict[str, Any]]) -> int:
     steps_burn = int(step_count * STEP_CALORIES_PER_STEP)
     _, workout_burn, _ = summarize_exercises(exercise_entries)
@@ -388,7 +562,22 @@ def ensure_model_loaded() -> None:
 @app.route("/")
 def index():
     """Serve the prototype UI"""
-    return render_template("index.html", food_options=FOOD_CALORIES)
+    user = current_user()
+    history_entries: list[dict[str, Any]] = []
+    if user:
+        recent = fetch_recent_check_ins(user["id"])
+        history_entries = enrich_history_entries(recent)
+
+    calculators = get_calculator_configs()
+    return render_template(
+        "index.html",
+        user=user,
+        history=history_entries,
+        calculators=calculators,
+        food_options=FOOD_CALORIES,
+        exercise_options=EXERCISE_LIBRARY,
+        portion_config=PORTION_CONFIG,
+    )
 
 #summary 
 @app.post("/analyze")
@@ -416,17 +605,42 @@ def analyze():
     net_intake = calorie_intake - calories_burned
     goal = recommend_goal(net_intake, maintenance_calories)
     bmi_value, bmi_category = calculate_bmi(height_cm, weight_kg)
+    micro_coach_text = None  # Placeholder for future insights
 
-    return jsonify(
-        {
-            "calorieIntake": calorie_intake,
-            "caloriesBurned": calories_burned,
-            "maintenanceCalories": maintenance_calories,
-            "recommendedGoal": goal,
-            "bmi": bmi_value,
-            "bmiCategory": bmi_category,
-        }
-    )
+    response_payload = {
+        "foods": selected_foods,
+        "foodPortions": food_portions,
+        "exerciseEntries": exercise_entries,
+        "steps": step_count,
+        "calorieIntake": calorie_intake,
+        "caloriesBurned": calories_burned,
+        "maintenanceCalories": maintenance_calories,
+        "recommendedGoal": goal,
+        "bmi": bmi_value,
+        "bmiCategory": bmi_category,
+        "microCoachText": micro_coach_text,
+    }
+
+    user = current_user()
+    if user:
+        record_check_in(user["id"], response_payload)
+        recent = fetch_recent_check_ins(user["id"])
+        response_payload["history"] = enrich_history_entries(recent)
+
+    return jsonify(response_payload)
+
+
+@app.post("/calculators/<calc_id>")
+def run_calculator_endpoint(calc_id: str):
+    """Execute one of the frontend calculators."""
+    payload = request.get_json(force=True) or {}
+    try:
+        result = run_calculator(calc_id, payload)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:  # pragma: no cover - unexpected failure
+        return jsonify({"error": f"Calculator failed: {exc}"}), 500
+    return jsonify({"result": result})
 
 
 @app.post("/predict-food")
@@ -460,6 +674,20 @@ def predict_food():
     )
 
 
+@app.get("/login")
+def login_page():
+    if current_user():
+        return redirect(url_for("index"))
+    return render_template("login.html")
+
+
+@app.get("/register")
+def register_page():
+    if current_user():
+        return redirect(url_for("index"))
+    return render_template("register.html")
+
+
 @app.post("/register")
 def register():
     data = request.get_json(force=True)
@@ -486,7 +714,7 @@ def login():
     email = data.get("email", "").lower().strip()
     password = data.get("password", "")
 
-    user = find_user_by_email(email)
+    user = find_user_by_email(email, include_sensitive=True)
     if not user or not check_password_hash(user["password_hash"], password):  # type: ignore[index]
         return jsonify({"error": "Invalid credentials."}), 400
 

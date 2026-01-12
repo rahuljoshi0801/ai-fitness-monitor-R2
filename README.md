@@ -86,11 +86,11 @@ Backend: Python(Flash)
 
 
 ## Screenshots
-![Screenshot](added/S1.png)
+![Screenshot](added/s4.png)
 
-![Screenshot](added/S2.png)
+![Screenshot](added/s5.png)
 
-![Screenshot](added/S3.png)
+![Screenshot](added/s6.png)
 
 
 ## Screenrecording
@@ -109,10 +109,10 @@ https://drive.google.com/file/d/1avxUC6yXU5PKSeI3clyAO5GC3GFMO9Vl/view?usp=shari
 
 
 ## Team members 
--Rahul Joshi
--Bhumi
--Shivani Negi
--Piyush Palariya
+-Rahul Joshi (Team Lead)
+-Bhumi (Frontend Developer)
+-Shivani Negi (Backend Developer)
+-Piyush Palariya (AI/ML Developer)
 
 Note: 
 The project is developed for Round 1 prototype . 
